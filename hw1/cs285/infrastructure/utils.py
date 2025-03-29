@@ -17,13 +17,14 @@ def sample_trajectory(env, policy, max_path_length, render=False):
     """Sample a rollout in the environment from a policy."""
     
     # initialize env for the beginning of a new rollout
-    ob =  env.reset() # TODO: initial observation after resetting the env
+    ob =  env.reset() 
+
+    # TODO: initial observation after resetting the env
 
     # init vars
     obs, acs, rewards, next_obs, terminals, image_obs = [], [], [], [], [], []
     steps = 0
     while True:
-
         # render image of the simulated env
         if render:
             if hasattr(env, 'sim'):
@@ -33,15 +34,14 @@ def sample_trajectory(env, policy, max_path_length, render=False):
             image_obs.append(cv2.resize(img, dsize=(250, 250), interpolation=cv2.INTER_CUBIC))
     
         # TODO use the most recent ob to decide what to do
-        ac = TODO # HINT: this is a numpy array
-        ac = ac[0]
+        ac = ptu.to_numpy(policy(ptu.from_numpy(ob[None])).sample()[0])
 
         # TODO: take that action and get reward and next ob
-        next_ob, rew, done, _ = TODO
+        next_ob, rew, done, _ = env.step(ac)
         
         # TODO rollout can end due to done, or due to max_path_length
         steps += 1
-        rollout_done = TODO # HINT: this is either 0 or 1
+        rollout_done = done or steps == max_path_length
         
         # record result of taking that action
         obs.append(ob)
@@ -123,10 +123,12 @@ def compute_metrics(paths, eval_paths):
     # returns, for logging
     train_returns = [path["reward"].sum() for path in paths]
     eval_returns = [eval_path["reward"].sum() for eval_path in eval_paths]
+    # exp_eval_returns = [exp_eval_path["reward"].sum() for exp_eval_path in exp_eval_paths]
 
     # episode lengths, for logging
     train_ep_lens = [len(path["reward"]) for path in paths]
     eval_ep_lens = [len(eval_path["reward"]) for eval_path in eval_paths]
+    # exp_eval_ep_lens = [len(exp_eval_path["reward"]) for exp_eval_path in exp_eval_paths]
 
     # decide what to log
     logs = OrderedDict()
@@ -135,6 +137,12 @@ def compute_metrics(paths, eval_paths):
     logs["Eval_MaxReturn"] = np.max(eval_returns)
     logs["Eval_MinReturn"] = np.min(eval_returns)
     logs["Eval_AverageEpLen"] = np.mean(eval_ep_lens)
+
+    # logs["Exp_Eval_AverageReturn"] = np.mean(exp_eval_returns)
+    # logs["Exp_Eval_StdReturn"] = np.std(exp_eval_returns)
+    # logs["Exp_Eval_MaxReturn"] = np.max(exp_eval_returns)
+    # logs["Exp_Eval_MinReturn"] = np.min(exp_eval_returns)
+    # logs["Exp_Eval_AverageEpLen"] = np.mean(exp_eval_ep_lens)
 
     logs["Train_AverageReturn"] = np.mean(train_returns)
     logs["Train_StdReturn"] = np.std(train_returns)
